@@ -9,11 +9,6 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .fraction-input::-webkit-inner-spin-button, 
-        .fraction-input::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
-        }
         .animate-fadeIn {
             animation: fadeIn 0.4s ease-out forwards;
         }
@@ -43,6 +38,18 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
+        // --- HÀM XỬ LÝ TOÁN HỌC THÔNG MINH ---
+        const evalMath = (str) => {
+            try {
+                if (str === '' || str === null || str === undefined) return NaN;
+                let parsed = String(str).replace(/x/gi, '*').replace(/:/g, '/');
+                if (!/^[\d\s\+\-\*\/]+$/.test(parsed)) return NaN;
+                return Function(`'use strict'; return (${parsed})`)();
+            } catch(e) {
+                return NaN;
+            }
+        };
+
         // ==========================================
         // 1. UI COMPONENTS DÙNG CHUNG
         // ==========================================
@@ -62,9 +69,9 @@
 
         const InputFraction = ({ nVal, dVal, nName, dName, onChange }) => (
             <div className="flex flex-col items-center justify-center mx-2">
-                <input type="number" value={nVal} onChange={e => onChange(nName, e.target.value)} className="fraction-input w-16 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-2xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500 mb-2 transition-colors" />
-                <div className="w-20 h-1 bg-white rounded"></div>
-                <input type="number" value={dVal} onChange={e => onChange(dName, e.target.value)} className="fraction-input w-16 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-2xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500 mt-2 transition-colors" />
+                <input type="text" value={nVal} onChange={e => onChange(nName, e.target.value)} className="w-20 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500 mb-2 transition-colors" />
+                <div className="w-24 h-1 bg-white rounded"></div>
+                <input type="text" value={dVal} onChange={e => onChange(dName, e.target.value)} className="w-20 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500 mt-2 transition-colors" />
             </div>
         );
 
@@ -79,14 +86,14 @@
         const DetailedCalculator = ({ f1, f2, operation, onComplete, stepLabel }) => {
             const [inputs, setInputs] = useState({
                 lcd: '', qN1: '', qD1: '', qN2: '', qD2: '',
-                iN: '', iD: '',
+                iN1: '', iN2: '', iD: '', // Tách 2 ô tử số trung gian
                 mN1: '', mN2: '', mD1: '', mD2: '', resN: '', resD: '',
                 cmpSign: '' 
             });
             const [status, setStatus] = useState('idle');
 
             useEffect(() => {
-                setInputs({ lcd: '', qN1: '', qD1: '', qN2: '', qD2: '', iN: '', iD: '', mN1: '', mN2: '', mD1: '', mD2: '', resN: '', resD: '', cmpSign: '' });
+                setInputs({ lcd: '', qN1: '', qD1: '', qN2: '', qD2: '', iN1: '', iN2: '', iD: '', mN1: '', mN2: '', mD1: '', mD2: '', resN: '', resD: '', cmpSign: '' });
                 setStatus('idle');
             }, [f1, f2, operation]);
 
@@ -94,31 +101,43 @@
 
             const checkAnswer = () => {
                 let isCorrect = false;
-                const { lcd, qN1, qD1, qN2, qD2, iN, iD, mN1, mN2, mD1, mD2, resN, resD, cmpSign } = inputs;
+                const { lcd, qN1, qD1, qN2, qD2, iN1, iN2, iD, mN1, mN2, mD1, mD2, resN, resD, cmpSign } = inputs;
                 
-                const valRes = parseInt(resD) ? parseInt(resN) / parseInt(resD) : 0;
+                const valRes = evalMath(resD) ? evalMath(resN) / evalMath(resD) : 0;
 
                 if (operation === '+' || operation === '-') {
                     const LcdNum = parseInt(lcd);
                     const isLcdValid = LcdNum > 0 && LcdNum % f1.d === 0 && LcdNum % f2.d === 0;
-                    const isQ1Valid = (parseInt(qN1) / parseInt(qD1) === f1.n / f1.d) && (parseInt(qD1) === LcdNum);
-                    const isQ2Valid = (parseInt(qN2) / parseInt(qD2) === f2.n / f2.d) && (parseInt(qD2) === LcdNum);
                     
-                    const expectedIN = `${qN1}${operation}${qN2}`;
-                    const isINValid = iN.replace(/\s/g, '') === expectedIN;
-                    const isIDValid = parseInt(iD) === LcdNum;
+                    const valQN1 = evalMath(qN1);
+                    const valQD1 = evalMath(qD1);
+                    const valQN2 = evalMath(qN2);
+                    const valQD2 = evalMath(qD2);
+
+                    const isQ1Valid = (valQN1 / valQD1 === f1.n / f1.d) && (valQD1 === LcdNum);
+                    const isQ2Valid = (valQN2 / valQD2 === f2.n / f2.d) && (valQD2 === LcdNum);
+                    
+                    // Kiểm tra bước gom tử số (2 ô tách biệt)
+                    const valIN1 = evalMath(iN1);
+                    const valIN2 = evalMath(iN2);
+                    const isINValid = (valIN1 === valQN1) && (valIN2 === valQN2);
+                    const isIDValid = evalMath(iD) === LcdNum;
 
                     const expectedRes = operation === '+' ? (f1.n/f1.d + f2.n/f2.d) : (f1.n/f1.d - f2.n/f2.d);
                     isCorrect = isLcdValid && isQ1Valid && isQ2Valid && isINValid && isIDValid && (Math.abs(valRes - expectedRes) < 0.00001);
                 } 
                 else if (operation === 'x') {
-                    const isMNValid = (mN1 == f1.n && mN2 == f2.n) || (mN1 == f2.n && mN2 == f1.n);
-                    const isMDValid = (mD1 == f1.d && mD2 == f2.d) || (mD1 == f2.d && mD2 == f1.d);
+                    const vN1 = evalMath(mN1); const vN2 = evalMath(mN2);
+                    const vD1 = evalMath(mD1); const vD2 = evalMath(mD2);
+                    const isMNValid = (vN1 == f1.n && vN2 == f2.n) || (vN1 == f2.n && vN2 == f1.n);
+                    const isMDValid = (vD1 == f1.d && vD2 == f2.d) || (vD1 == f2.d && vD2 == f1.d);
                     isCorrect = isMNValid && isMDValid && (Math.abs(valRes - ((f1.n/f1.d) * (f2.n/f2.d))) < 0.00001);
                 }
                 else if (operation === ':') {
-                    const isMNValid = (mN1 == f1.n && mN2 == f2.d) || (mN1 == f2.d && mN2 == f1.n);
-                    const isMDValid = (mD1 == f1.d && mD2 == f2.n) || (mD1 == f2.n && mD2 == f1.d);
+                    const vN1 = evalMath(mN1); const vN2 = evalMath(mN2);
+                    const vD1 = evalMath(mD1); const vD2 = evalMath(mD2);
+                    const isMNValid = (vN1 == f1.n && vN2 == f2.d) || (vN1 == f2.d && vN2 == f1.n);
+                    const isMDValid = (vD1 == f1.d && vD2 == f2.n) || (vD1 == f2.n && vD2 == f1.d);
                     isCorrect = isMNValid && isMDValid && (Math.abs(valRes - ((f1.n/f1.d) / (f2.n/f2.d))) < 0.00001);
                 }
                 else if (operation === 'so_sanh') {
@@ -129,8 +148,13 @@
                     if (f1.d !== f2.d) {
                         const LcdNum = parseInt(lcd);
                         const isLcdValid = LcdNum > 0 && LcdNum % f1.d === 0 && LcdNum % f2.d === 0;
-                        const isQ1Valid = (parseInt(qN1) / parseInt(qD1) === f1.n / f1.d) && (parseInt(qD1) === LcdNum);
-                        const isQ2Valid = (parseInt(qN2) / parseInt(qD2) === f2.n / f2.d) && (parseInt(qD2) === LcdNum);
+                        const valQN1 = evalMath(qN1);
+                        const valQD1 = evalMath(qD1);
+                        const valQN2 = evalMath(qN2);
+                        const valQD2 = evalMath(qD2);
+
+                        const isQ1Valid = (valQN1 / valQD1 === f1.n / f1.d) && (valQD1 === LcdNum);
+                        const isQ2Valid = (valQN2 / valQD2 === f2.n / f2.d) && (valQD2 === LcdNum);
                         isCorrect = isLcdValid && isQ1Valid && isQ2Valid && cmpSign === expectedSign;
                     } else {
                         isCorrect = cmpSign === expectedSign;
@@ -156,7 +180,7 @@
                         <div className="flex flex-col items-center space-y-8">
                             <div className="flex items-center text-xl font-semibold bg-blue-900/30 px-6 py-3 rounded-lg border border-blue-800/50">
                                 <span className="text-blue-200 mr-4">Tìm mẫu số chung:</span>
-                                <input type="number" value={inputs.lcd} onChange={e => handleInp('lcd', e.target.value)} className="fraction-input w-20 h-10 bg-gray-700 border-2 border-gray-500 rounded text-center text-2xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
+                                <input type="number" value={inputs.lcd} onChange={e => handleInp('lcd', e.target.value)} className="w-20 h-10 bg-gray-700 border-2 border-gray-500 rounded text-center text-2xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
                             </div>
                             <div className="flex items-center flex-wrap justify-center gap-y-4">
                                 <InputFraction nVal={inputs.qN1} dVal={inputs.qD1} nName="qN1" dName="qD1" onChange={handleInp} />
@@ -165,10 +189,15 @@
                                 
                                 <span className="text-3xl font-bold text-blue-400 mx-2">=</span>
                                 
+                                {/* Form mới tách 2 ô tử số có dấu cố định ở giữa */}
                                 <div className="flex flex-col items-center justify-center mx-2">
-                                    <input type="text" value={inputs.iN} onChange={e => handleInp('iN', e.target.value)} placeholder={`...${operation}...`} className="w-24 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500 mb-2 transition-colors" />
-                                    <div className="w-28 h-1 bg-white rounded"></div>
-                                    <input type="number" value={inputs.iD} onChange={e => handleInp('iD', e.target.value)} className="fraction-input w-20 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-2xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500 mt-2 transition-colors" />
+                                    <div className="flex items-center justify-center mb-2">
+                                        <input type="text" value={inputs.iN1} onChange={e => handleInp('iN1', e.target.value)} className="w-16 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500 transition-colors" />
+                                        <span className="text-2xl font-bold text-blue-400 mx-2">{operation}</span>
+                                        <input type="text" value={inputs.iN2} onChange={e => handleInp('iN2', e.target.value)} className="w-16 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500 transition-colors" />
+                                    </div>
+                                    <div className="w-44 h-1 bg-white rounded"></div>
+                                    <input type="text" value={inputs.iD} onChange={e => handleInp('iD', e.target.value)} className="w-24 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-2xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500 mt-2 transition-colors" />
                                 </div>
 
                                 <span className="text-3xl font-bold text-blue-400 mx-2">=</span>
@@ -184,16 +213,16 @@
                                 <div className="flex flex-col items-center justify-center mx-4">
                                     <div className="flex items-center pb-2 border-b-4 border-gray-100">
                                         <span className="text-2xl font-bold text-gray-500 mr-2">(</span>
-                                        <input type="number" value={inputs.mN1} onChange={e => handleInp('mN1', e.target.value)} className="fraction-input w-12 h-10 bg-gray-700 border-2 border-gray-500 rounded text-center text-xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
+                                        <input type="text" value={inputs.mN1} onChange={e => handleInp('mN1', e.target.value)} className="w-12 h-10 bg-gray-700 border-2 border-gray-500 rounded text-center text-xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
                                         <span className="text-xl font-bold mx-2 text-gray-400">x</span>
-                                        <input type="number" value={inputs.mN2} onChange={e => handleInp('mN2', e.target.value)} className="fraction-input w-12 h-10 bg-gray-700 border-2 border-gray-500 rounded text-center text-xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
+                                        <input type="text" value={inputs.mN2} onChange={e => handleInp('mN2', e.target.value)} className="w-12 h-10 bg-gray-700 border-2 border-gray-500 rounded text-center text-xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
                                         <span className="text-2xl font-bold text-gray-500 ml-2">)</span>
                                     </div>
                                     <div className="flex items-center pt-2">
                                         <span className="text-2xl font-bold text-gray-500 mr-2">(</span>
-                                        <input type="number" value={inputs.mD1} onChange={e => handleInp('mD1', e.target.value)} className="fraction-input w-12 h-10 bg-gray-700 border-2 border-gray-500 rounded text-center text-xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
+                                        <input type="text" value={inputs.mD1} onChange={e => handleInp('mD1', e.target.value)} className="w-12 h-10 bg-gray-700 border-2 border-gray-500 rounded text-center text-xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
                                         <span className="text-xl font-bold mx-2 text-gray-400">x</span>
-                                        <input type="number" value={inputs.mD2} onChange={e => handleInp('mD2', e.target.value)} className="fraction-input w-12 h-10 bg-gray-700 border-2 border-gray-500 rounded text-center text-xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
+                                        <input type="text" value={inputs.mD2} onChange={e => handleInp('mD2', e.target.value)} className="w-12 h-10 bg-gray-700 border-2 border-gray-500 rounded text-center text-xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
                                         <span className="text-2xl font-bold text-gray-500 ml-2">)</span>
                                     </div>
                                 </div>
@@ -209,7 +238,7 @@
                                 <React.Fragment>
                                     <div className="flex items-center text-xl font-semibold bg-blue-900/30 px-6 py-3 rounded-lg border border-blue-800/50">
                                         <span className="text-blue-200 mr-4">Bước 1: Tìm mẫu số chung:</span>
-                                        <input type="number" value={inputs.lcd} onChange={e => handleInp('lcd', e.target.value)} className="fraction-input w-20 h-10 bg-gray-700 border-2 border-gray-500 rounded text-center text-2xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
+                                        <input type="number" value={inputs.lcd} onChange={e => handleInp('lcd', e.target.value)} className="w-20 h-10 bg-gray-700 border-2 border-gray-500 rounded text-center text-2xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
                                     </div>
                                     <div className="flex flex-col items-center w-full space-y-4">
                                         <span className="text-blue-200 text-xl font-semibold">Bước 2: Quy đồng</span>
@@ -235,7 +264,7 @@
                                             <React.Fragment>
                                                 <span className="text-3xl font-bold text-gray-500 mx-4">=</span>
                                                 <div className="text-yellow-400 transform scale-110">
-                                                   <StaticFraction n={inputs.qN1} d={inputs.qD1} />
+                                                   <StaticFraction n={evalMath(inputs.qN1) || inputs.qN1} d={evalMath(inputs.qD1) || inputs.qD1} />
                                                 </div>
                                             </React.Fragment>
                                         )}
@@ -254,7 +283,7 @@
                                         {f1.d !== f2.d && inputs.qN2 && inputs.qD2 && (
                                             <React.Fragment>
                                                 <div className="text-yellow-400 transform scale-110">
-                                                   <StaticFraction n={inputs.qN2} d={inputs.qD2} />
+                                                   <StaticFraction n={evalMath(inputs.qN2) || inputs.qN2} d={evalMath(inputs.qD2) || inputs.qD2} />
                                                 </div>
                                                 <span className="text-3xl font-bold text-gray-500 mx-4">=</span>
                                             </React.Fragment>
@@ -279,7 +308,7 @@
                                     Tuyệt vời! Bé giải chi tiết đúng rồi.
                                 </div>
                                 {onComplete && (
-                                    <button onClick={() => onComplete({ n: parseInt(inputs.resN), d: parseInt(inputs.resD) })} className="bg-blue-600 hover:bg-blue-500 text-white text-lg font-bold py-2 px-8 rounded-full shadow-lg">
+                                    <button onClick={() => onComplete({ n: parseInt(evalMath(inputs.resN)), d: parseInt(evalMath(inputs.resD)) })} className="bg-blue-600 hover:bg-blue-500 text-white text-lg font-bold py-2 px-8 rounded-full shadow-lg">
                                         Xác nhận và Đi tiếp ➔
                                     </button>
                                 )}
@@ -519,7 +548,7 @@
         // 6. COMPONENT CHÍNH ROOT CỦA APP (NAVIGATOR)
         // ==========================================
         const App = () => {
-            const [activeTab, setActiveTab] = useState('practice'); // 'practice' | 'review'
+            const [activeTab, setActiveTab] = useState('practice');
 
             return (
                 <div className="w-full flex flex-col items-center gap-8">
