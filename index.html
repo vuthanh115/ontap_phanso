@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bé Luyện Toán Phân Số - Cập Nhật Bước Gom Tử Số</title>
+    <title>Bé Luyện Toán Phân Số - Hoàn Chỉnh</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -65,13 +65,14 @@
         const DetailedCalculator = ({ f1, f2, operation, onComplete, stepLabel }) => {
             const [inputs, setInputs] = useState({
                 lcd: '', qN1: '', qD1: '', qN2: '', qD2: '',
-                iN: '', iD: '', // Trạng thái mới cho bước gom tử số
-                mN1: '', mN2: '', mD1: '', mD2: '', resN: '', resD: ''
+                iN: '', iD: '',
+                mN1: '', mN2: '', mD1: '', mD2: '', resN: '', resD: '',
+                cmpSign: '' // Trạng thái cho phép So Sánh
             });
             const [status, setStatus] = useState('idle');
 
             useEffect(() => {
-                setInputs({ lcd: '', qN1: '', qD1: '', qN2: '', qD2: '', iN: '', iD: '', mN1: '', mN2: '', mD1: '', mD2: '', resN: '', resD: '' });
+                setInputs({ lcd: '', qN1: '', qD1: '', qN2: '', qD2: '', iN: '', iD: '', mN1: '', mN2: '', mD1: '', mD2: '', resN: '', resD: '', cmpSign: '' });
                 setStatus('idle');
             }, [f1, f2, operation]);
 
@@ -79,8 +80,9 @@
 
             const checkAnswer = () => {
                 let isCorrect = false;
-                const { lcd, qN1, qD1, qN2, qD2, iN, iD, mN1, mN2, mD1, mD2, resN, resD } = inputs;
-                const valRes = parseInt(resN) / parseInt(resD);
+                const { lcd, qN1, qD1, qN2, qD2, iN, iD, mN1, mN2, mD1, mD2, resN, resD, cmpSign } = inputs;
+                
+                const valRes = parseInt(resD) ? parseInt(resN) / parseInt(resD) : 0;
 
                 if (operation === '+' || operation === '-') {
                     const LcdNum = parseInt(lcd);
@@ -88,9 +90,8 @@
                     const isQ1Valid = (parseInt(qN1) / parseInt(qD1) === f1.n / f1.d) && (parseInt(qD1) === LcdNum);
                     const isQ2Valid = (parseInt(qN2) / parseInt(qD2) === f2.n / f2.d) && (parseInt(qD2) === LcdNum);
                     
-                    // Kiểm tra bước gom tử số trung gian
                     const expectedIN = `${qN1}${operation}${qN2}`;
-                    const isINValid = iN.replace(/\s/g, '') === expectedIN; // Loại bỏ dấu cách nếu bé vô tình bấm
+                    const isINValid = iN.replace(/\s/g, '') === expectedIN;
                     const isIDValid = parseInt(iD) === LcdNum;
 
                     const expectedRes = operation === '+' ? (f1.n/f1.d + f2.n/f2.d) : (f1.n/f1.d - f2.n/f2.d);
@@ -106,8 +107,26 @@
                     const isMDValid = (mD1 == f1.d && mD2 == f2.n) || (mD1 == f2.n && mD2 == f1.d);
                     isCorrect = isMNValid && isMDValid && (Math.abs(valRes - ((f1.n/f1.d) / (f2.n/f2.d))) < 0.00001);
                 }
+                else if (operation === 'so_sanh') {
+                    const val1 = f1.n / f1.d;
+                    const val2 = f2.n / f2.d;
+                    const expectedSign = Math.abs(val1 - val2) < 0.00001 ? '=' : (val1 > val2 ? '>' : '<');
+                    
+                    if (f1.d !== f2.d) {
+                        const LcdNum = parseInt(lcd);
+                        const isLcdValid = LcdNum > 0 && LcdNum % f1.d === 0 && LcdNum % f2.d === 0;
+                        const isQ1Valid = (parseInt(qN1) / parseInt(qD1) === f1.n / f1.d) && (parseInt(qD1) === LcdNum);
+                        const isQ2Valid = (parseInt(qN2) / parseInt(qD2) === f2.n / f2.d) && (parseInt(qD2) === LcdNum);
+                        isCorrect = isLcdValid && isQ1Valid && isQ2Valid && cmpSign === expectedSign;
+                    } else {
+                        isCorrect = cmpSign === expectedSign;
+                    }
+                }
+                
                 setStatus(isCorrect ? 'correct' : 'incorrect');
             };
+
+            const opDisplay = operation === 'so_sanh' ? '?' : operation;
 
             return (
                 <div className="w-full animate-fadeIn bg-gray-900 rounded-2xl p-8 border border-gray-700 shadow-inner mt-4">
@@ -115,7 +134,7 @@
                     
                     <div className="flex items-center justify-center mb-8 bg-gray-800 rounded-xl py-4 mx-auto w-max px-10 border border-gray-600">
                         <StaticFraction n={f1.n} d={f1.d} />
-                        <span className="text-4xl font-bold text-blue-400 mx-4">{operation}</span>
+                        <span className="text-4xl font-bold text-blue-400 mx-4">{opDisplay}</span>
                         <StaticFraction n={f2.n} d={f2.d} />
                     </div>
 
@@ -132,7 +151,6 @@
                                 
                                 <span className="text-3xl font-bold text-blue-400 mx-2">=</span>
                                 
-                                {/* BƯỚC GOM TỬ SỐ */}
                                 <div className="flex flex-col items-center justify-center mx-2">
                                     <input type="text" value={inputs.iN} onChange={e => handleInp('iN', e.target.value)} placeholder={`...${operation}...`} className="w-24 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500 mb-2 transition-colors" />
                                     <div className="w-28 h-1 bg-white rounded"></div>
@@ -171,6 +189,72 @@
                         </div>
                     )}
 
+                    {(operation === 'so_sanh') && (
+                        <div className="flex flex-col items-center space-y-8">
+                            {f1.d !== f2.d && (
+                                <React.Fragment>
+                                    <div className="flex items-center text-xl font-semibold bg-blue-900/30 px-6 py-3 rounded-lg border border-blue-800/50">
+                                        <span className="text-blue-200 mr-4">Bước 1: Tìm mẫu số chung:</span>
+                                        <input type="number" value={inputs.lcd} onChange={e => handleInp('lcd', e.target.value)} className="fraction-input w-20 h-10 bg-gray-700 border-2 border-gray-500 rounded text-center text-2xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
+                                    </div>
+                                    <div className="flex flex-col items-center w-full space-y-4">
+                                        <span className="text-blue-200 text-xl font-semibold">Bước 2: Quy đồng</span>
+                                        <div className="flex items-center gap-4 bg-gray-800 p-6 rounded-xl border border-gray-600">
+                                            <StaticFraction n={f1.n} d={f1.d} />
+                                            <span className="text-3xl font-bold text-gray-500">=</span>
+                                            <InputFraction nVal={inputs.qN1} dVal={inputs.qD1} nName="qN1" dName="qD1" onChange={handleInp} />
+                                            <span className="mx-6 text-xl text-gray-400 italic">và</span>
+                                            <StaticFraction n={f2.n} d={f2.d} />
+                                            <span className="text-3xl font-bold text-gray-500">=</span>
+                                            <InputFraction nVal={inputs.qN2} dVal={inputs.qD2} nName="qN2" dName="qD2" onChange={handleInp} />
+                                        </div>
+                                    </div>
+                                </React.Fragment>
+                            )}
+                            
+                            {/* BƯỚC 3: KẾT LUẬN VỚI PHÂN SỐ ĐÃ QUY ĐỒNG */}
+                            <div className="flex flex-col items-center w-full space-y-6 pt-4">
+                                <span className="text-yellow-400 text-2xl font-bold">Bước {f1.d !== f2.d ? '3' : '1'}: Kết luận</span>
+                                <div className="flex items-center gap-4 bg-gray-800 p-6 rounded-2xl border-2 border-gray-600 shadow-lg justify-center w-full max-w-4xl">
+                                    
+                                    <div className="flex items-center bg-gray-900 px-6 py-4 rounded-xl border border-gray-700">
+                                        <StaticFraction n={f1.n} d={f1.d} />
+                                        {f1.d !== f2.d && inputs.qN1 && inputs.qD1 && (
+                                            <React.Fragment>
+                                                <span className="text-3xl font-bold text-gray-500 mx-4">=</span>
+                                                <div className="text-yellow-400 transform scale-110">
+                                                   <StaticFraction n={inputs.qN1} d={inputs.qD1} />
+                                                </div>
+                                            </React.Fragment>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-3 mx-4">
+                                        {['<', '=', '>'].map(sign => (
+                                            <button key={sign} onClick={() => handleInp('cmpSign', sign)}
+                                                className={`w-16 h-16 text-3xl font-bold rounded-xl transition-all ${inputs.cmpSign === sign ? 'bg-blue-600 text-white border-2 border-blue-300 shadow-[0_0_15px_rgba(37,99,235,0.6)] transform scale-110' : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-500'}`}>
+                                                {sign}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex items-center bg-gray-900 px-6 py-4 rounded-xl border border-gray-700">
+                                        {f1.d !== f2.d && inputs.qN2 && inputs.qD2 && (
+                                            <React.Fragment>
+                                                <div className="text-yellow-400 transform scale-110">
+                                                   <StaticFraction n={inputs.qN2} d={inputs.qD2} />
+                                                </div>
+                                                <span className="text-3xl font-bold text-gray-500 mx-4">=</span>
+                                            </React.Fragment>
+                                        )}
+                                        <StaticFraction n={f2.n} d={f2.d} />
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex flex-col items-center mt-10 min-h-[5rem]">
                         {status === 'idle' && (
                             <button onClick={checkAnswer} className="bg-green-600 hover:bg-green-500 text-white text-lg font-bold py-3 px-10 rounded-full transition-transform transform hover:scale-105 shadow-[0_4px_14px_0_rgba(22,163,74,0.39)]">
@@ -183,10 +267,11 @@
                                     <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                                     Tuyệt vời! Bé giải chi tiết đúng rồi.
                                 </div>
-                                <button onClick={() => onComplete({ n: parseInt(inputs.resN), d: parseInt(inputs.resD) })} className="bg-blue-600 hover:bg-blue-500 text-white text-lg font-bold py-2 px-8 rounded-full shadow-lg">
-                                    Xác nhận và Đi tiếp ➔
-                                </button>
-                                <div className="text-gray-400 text-sm mt-2 italic">(Nhớ kiểm tra xem phân số đã tối giản chưa nhé!)</div>
+                                {onComplete && (
+                                    <button onClick={() => onComplete({ n: parseInt(inputs.resN), d: parseInt(inputs.resD) })} className="bg-blue-600 hover:bg-blue-500 text-white text-lg font-bold py-2 px-8 rounded-full shadow-lg">
+                                        Xác nhận và Đi tiếp ➔
+                                    </button>
+                                )}
                             </div>
                         )}
                         {status === 'incorrect' && (
@@ -361,12 +446,6 @@
             const [operation, setOperation] = useState('+');
             const [f1, setF1] = useState({ n: 1, d: 2 });
             const [f2, setF2] = useState({ n: 1, d: 4 });
-            
-            const [inputs, setInputs] = useState({
-                lcd: '', qN1: '', qD1: '', qN2: '', qD2: '',
-                iN: '', iD: '', // Trạng thái mới
-                mN1: '', mN2: '', mD1: '', mD2: '', resN: '', resD: ''
-            });
             const [status, setStatus] = useState('idle');
 
             const generateProblem = (op = operation) => {
@@ -384,156 +463,46 @@
 
                 setF1({ n: n1, d: d1 });
                 setF2({ n: n2, d: d2 });
-                setInputs({
-                    lcd: '', qN1: '', qD1: '', qN2: '', qD2: '', iN: '', iD: '', mN1: '', mN2: '', mD1: '', mD2: '', resN: '', resD: ''
-                });
                 setStatus('idle');
             };
 
             useEffect(() => { generateProblem(); }, [operation]);
 
-            const handleInp = (field, val) => setInputs(prev => ({ ...prev, [field]: val }));
-
-            const checkAnswer = () => {
-                let isCorrect = false;
-                const { lcd, qN1, qD1, qN2, qD2, iN, iD, mN1, mN2, mD1, mD2, resN, resD } = inputs;
-                const valRes = parseInt(resN) / parseInt(resD);
-
-                if (operation === '+' || operation === '-') {
-                    const LcdNum = parseInt(lcd);
-                    const isLcdValid = LcdNum > 0 && LcdNum % f1.d === 0 && LcdNum % f2.d === 0;
-                    const isQ1Valid = (parseInt(qN1) / parseInt(qD1) === f1.n / f1.d) && (parseInt(qD1) === LcdNum);
-                    const isQ2Valid = (parseInt(qN2) / parseInt(qD2) === f2.n / f2.d) && (parseInt(qD2) === LcdNum);
-                    
-                    // Kiểm tra bước gom tử số trung gian
-                    const expectedIN = `${qN1}${operation}${qN2}`;
-                    const isINValid = iN.replace(/\s/g, '') === expectedIN;
-                    const isIDValid = parseInt(iD) === LcdNum;
-
-                    const expectedRes = operation === '+' ? (f1.n/f1.d + f2.n/f2.d) : (f1.n/f1.d - f2.n/f2.d);
-                    isCorrect = isLcdValid && isQ1Valid && isQ2Valid && isINValid && isIDValid && (Math.abs(valRes - expectedRes) < 0.00001);
-                } 
-                else if (operation === 'x') {
-                    const isMNValid = (mN1 == f1.n && mN2 == f2.n) || (mN1 == f2.n && mN2 == f1.n);
-                    const isMDValid = (mD1 == f1.d && mD2 == f2.d) || (mD1 == f2.d && mD2 == f1.d);
-                    isCorrect = isMNValid && isMDValid && (Math.abs(valRes - ((f1.n/f1.d) * (f2.n/f2.d))) < 0.00001);
-                }
-                else if (operation === ':') {
-                    const isMNValid = (mN1 == f1.n && mN2 == f2.d) || (mN1 == f2.d && mN2 == f1.n);
-                    const isMDValid = (mD1 == f1.d && mD2 == f2.n) || (mD1 == f2.n && mD2 == f1.d);
-                    isCorrect = isMNValid && isMDValid && (Math.abs(valRes - ((f1.n/f1.d) / (f2.n/f2.d))) < 0.00001);
-                }
-                setStatus(isCorrect ? 'correct' : 'incorrect');
-            };
+            const OP_CONFIGS = [
+                { id: '+', label: 'Cộng (+)' },
+                { id: '-', label: 'Trừ (-)' },
+                { id: 'x', label: 'Nhân (x)' },
+                { id: ':', label: 'Chia (:)' },
+                { id: 'so_sanh', label: 'So Sánh (>, <)' }
+            ];
 
             return (
                 <div className="w-full flex flex-col gap-6">
-                    {/* Phần 1: Luyện toán cơ bản 4 phép tính */}
+                    {/* Phần 1: Luyện toán cơ bản */}
                     <div className="bg-gray-800 rounded-3xl shadow-2xl p-8 border border-gray-700">
                         <h1 className="text-3xl font-bold text-center text-blue-400 mb-8 tracking-wide">Phần 1: Luyện Giải Toán Ngẫu Nhiên</h1>
                         
-                        <div className="flex flex-wrap justify-center gap-3 mb-10">
-                            {['+', '-', 'x', ':'].map(op => (
-                                <button key={op} onClick={() => setOperation(op)}
-                                    className={`px-6 py-3 rounded-xl text-xl font-bold transition-all ${operation === op ? 'bg-blue-600 text-white ring-4 ring-blue-900' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}>
-                                    Phép {op === '+' ? 'Cộng' : op === '-' ? 'Trừ' : op === 'x' ? 'Nhân' : 'Chia'} ({op})
+                        <div className="flex flex-wrap justify-center gap-4 mb-10">
+                            {OP_CONFIGS.map(opCfg => (
+                                <button key={opCfg.id} onClick={() => setOperation(opCfg.id)}
+                                    className={`px-6 py-3 rounded-xl text-xl font-bold transition-all ${operation === opCfg.id ? 'bg-blue-600 text-white ring-4 ring-blue-900 shadow-lg' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}>
+                                    Phép {opCfg.label}
                                 </button>
                             ))}
                         </div>
 
-                        <div className="bg-gray-900 rounded-2xl p-8 mb-8 border border-gray-800 shadow-inner">
-                            <div className="flex items-center justify-center mb-8 bg-gray-800 rounded-xl py-4 mx-auto w-max px-10 shadow-md border border-gray-700">
-                                <span className="text-gray-400 font-semibold mr-6 text-xl">Đề bài:</span>
-                                <StaticFraction n={f1.n} d={f1.d} />
-                                <span className="text-4xl font-bold text-blue-400 mx-4">{operation}</span>
-                                <StaticFraction n={f2.n} d={f2.d} />
-                            </div>
+                        <DetailedCalculator 
+                            key={`${operation}-${f1.n}-${f1.d}-${f2.n}-${f2.d}`}
+                            f1={f1} 
+                            f2={f2} 
+                            operation={operation} 
+                        />
 
-                            {(operation === '+' || operation === '-') && (
-                                <div className="flex flex-col items-center space-y-8 animate-fadeIn">
-                                    <div className="flex items-center text-2xl font-semibold bg-blue-900/30 px-6 py-3 rounded-lg border border-blue-800/50">
-                                        <span className="text-blue-200 mr-4">Bước 1: Tìm mẫu số chung = </span>
-                                        <input type="number" value={inputs.lcd} onChange={e => handleInp('lcd', e.target.value)} className="fraction-input w-20 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-2xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
-                                    </div>
-                                    <div className="w-full h-px bg-gray-700"></div>
-                                    <div className="flex flex-col items-center w-full">
-                                        <span className="text-blue-200 text-xl mb-4 font-semibold">Bước 2 & 3: Quy đồng và Tính kết quả</span>
-                                        <div className="flex items-center flex-wrap justify-center gap-y-4">
-                                            <InputFraction nVal={inputs.qN1} dVal={inputs.qD1} nName="qN1" dName="qD1" onChange={handleInp} />
-                                            <span className="text-3xl font-bold text-gray-300 mx-2">{operation}</span>
-                                            <InputFraction nVal={inputs.qN2} dVal={inputs.qD2} nName="qN2" dName="qD2" onChange={handleInp} />
-                                            
-                                            <span className="text-3xl font-bold text-blue-400 mx-2">=</span>
-                                            
-                                            {/* BƯỚC GOM TỬ SỐ */}
-                                            <div className="flex flex-col items-center justify-center mx-2">
-                                                <input type="text" value={inputs.iN} onChange={e => handleInp('iN', e.target.value)} placeholder={`...${operation}...`} className="w-24 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500 mb-2 transition-colors" />
-                                                <div className="w-28 h-1 bg-white rounded"></div>
-                                                <input type="number" value={inputs.iD} onChange={e => handleInp('iD', e.target.value)} className="fraction-input w-20 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-2xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500 mt-2 transition-colors" />
-                                            </div>
-
-                                            <span className="text-3xl font-bold text-blue-400 mx-2">=</span>
-                                            <InputFraction nVal={inputs.resN} dVal={inputs.resD} nName="resN" dName="resD" onChange={handleInp} />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {(operation === 'x' || operation === ':') && (
-                                <div className="flex flex-col items-center space-y-6 animate-fadeIn">
-                                    {operation === ':' && <div className="text-yellow-400 font-medium italic mb-2">Gợi ý: Nhân với phân số đảo ngược nhé!</div>}
-                                    <div className="flex items-center justify-center flex-wrap gap-y-6">
-                                        <div className="flex flex-col items-center justify-center mx-4">
-                                            <div className="flex items-center pb-2 border-b-4 border-gray-100">
-                                                <span className="text-3xl font-bold text-gray-500 mr-2">(</span>
-                                                <input type="number" value={inputs.mN1} onChange={e => handleInp('mN1', e.target.value)} className="fraction-input w-14 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-2xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
-                                                <span className="text-2xl font-bold mx-3 text-gray-400">x</span>
-                                                <input type="number" value={inputs.mN2} onChange={e => handleInp('mN2', e.target.value)} className="fraction-input w-14 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-2xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
-                                                <span className="text-3xl font-bold text-gray-500 ml-2">)</span>
-                                            </div>
-                                            <div className="flex items-center pt-2">
-                                                <span className="text-3xl font-bold text-gray-500 mr-2">(</span>
-                                                <input type="number" value={inputs.mD1} onChange={e => handleInp('mD1', e.target.value)} className="fraction-input w-14 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-2xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
-                                                <span className="text-2xl font-bold mx-3 text-gray-400">x</span>
-                                                <input type="number" value={inputs.mD2} onChange={e => handleInp('mD2', e.target.value)} className="fraction-input w-14 h-12 bg-gray-700 border-2 border-gray-500 rounded text-center text-2xl font-bold text-yellow-300 focus:outline-none focus:border-blue-500" />
-                                                <span className="text-3xl font-bold text-gray-500 ml-2">)</span>
-                                            </div>
-                                        </div>
-                                        <span className="text-4xl font-bold text-blue-400 mx-6">=</span>
-                                        <InputFraction nVal={inputs.resN} dVal={inputs.resD} nName="resN" dName="resD" onChange={handleInp} />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex flex-col items-center h-28 justify-start">
-                            {status === 'idle' && (
-                                <button onClick={checkAnswer} className="bg-green-600 hover:bg-green-500 text-white text-xl font-bold py-4 px-12 rounded-full transition-transform transform hover:scale-105 shadow-[0_4px_14px_0_rgba(22,163,74,0.39)]">
-                                    Kiểm tra tất cả các bước
-                                </button>
-                            )}
-                            {status === 'correct' && (
-                                <div className="flex flex-col items-center animate-bounce">
-                                    <div className="text-green-400 text-2xl font-bold mb-4 flex items-center bg-green-900/20 px-6 py-2 rounded-full border border-green-800">
-                                        <svg className="w-8 h-8 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        Chính xác hoàn toàn! Giỏi quá!
-                                    </div>
-                                    <button onClick={() => generateProblem()} className="bg-blue-600 hover:bg-blue-500 text-white text-lg font-bold py-3 px-10 rounded-full transition-colors shadow-lg">
-                                        Giải bài ngẫu nhiên tiếp theo ➔
-                                    </button>
-                                </div>
-                            )}
-                            {status === 'incorrect' && (
-                                <div className="flex flex-col items-center">
-                                    <div className="text-red-400 text-xl font-bold mb-4 flex items-center bg-red-900/20 px-6 py-2 rounded-full border border-red-800">
-                                        <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        Có bước tính chưa đúng rồi, bé rà soát lại nhé!
-                                    </div>
-                                    <button onClick={() => setStatus('idle')} className="bg-gray-600 hover:bg-gray-500 text-white text-lg font-bold py-2 px-10 rounded-full transition-colors">
-                                        Tiếp tục sửa
-                                    </button>
-                                </div>
-                            )}
+                        <div className="flex justify-center mt-6">
+                            <button onClick={() => generateProblem()} className="bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white text-lg font-bold py-3 px-8 rounded-full transition-colors flex items-center">
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                Đổi bài ngẫu nhiên khác
+                            </button>
                         </div>
                     </div>
 
