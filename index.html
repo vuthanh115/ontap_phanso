@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bé Luyện Toán Phân Số - Hoàn Chỉnh</title>
+    <title>Bé Luyện Toán Phân Số - Giao Diện Tabs</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -21,9 +21,23 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        /* Tùy chỉnh thanh cuộn cho mượt mà */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; 
+        }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen flex items-start justify-center font-sans py-10">
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center justify-start font-sans py-8">
     <div id="root" class="w-full max-w-6xl p-4"></div>
 
     <script type="text/babel">
@@ -67,7 +81,7 @@
                 lcd: '', qN1: '', qD1: '', qN2: '', qD2: '',
                 iN: '', iD: '',
                 mN1: '', mN2: '', mD1: '', mD2: '', resN: '', resD: '',
-                cmpSign: '' // Trạng thái cho phép So Sánh
+                cmpSign: '' 
             });
             const [status, setStatus] = useState('idle');
 
@@ -132,7 +146,7 @@
                 <div className="w-full animate-fadeIn bg-gray-900 rounded-2xl p-8 border border-gray-700 shadow-inner mt-4">
                     {stepLabel && <div className="text-xl text-blue-300 font-bold mb-6 text-center">{stepLabel}</div>}
                     
-                    <div className="flex items-center justify-center mb-8 bg-gray-800 rounded-xl py-4 mx-auto w-max px-10 border border-gray-600">
+                    <div className="flex items-center justify-center mb-8 bg-gray-800 rounded-xl py-4 mx-auto w-max px-10 border border-gray-600 shadow-md">
                         <StaticFraction n={f1.n} d={f1.d} />
                         <span className="text-4xl font-bold text-blue-400 mx-4">{opDisplay}</span>
                         <StaticFraction n={f2.n} d={f2.d} />
@@ -212,11 +226,9 @@
                                 </React.Fragment>
                             )}
                             
-                            {/* BƯỚC 3: KẾT LUẬN VỚI PHÂN SỐ ĐÃ QUY ĐỒNG */}
                             <div className="flex flex-col items-center w-full space-y-6 pt-4">
                                 <span className="text-yellow-400 text-2xl font-bold">Bước {f1.d !== f2.d ? '3' : '1'}: Kết luận</span>
                                 <div className="flex items-center gap-4 bg-gray-800 p-6 rounded-2xl border-2 border-gray-600 shadow-lg justify-center w-full max-w-4xl">
-                                    
                                     <div className="flex items-center bg-gray-900 px-6 py-4 rounded-xl border border-gray-700">
                                         <StaticFraction n={f1.n} d={f1.d} />
                                         {f1.d !== f2.d && inputs.qN1 && inputs.qD1 && (
@@ -249,7 +261,6 @@
                                         )}
                                         <StaticFraction n={f2.n} d={f2.d} />
                                     </div>
-
                                 </div>
                             </div>
                         </div>
@@ -375,8 +386,8 @@
 
             if (activeId === null) {
                 return (
-                    <div className="bg-gray-800 rounded-3xl shadow-2xl p-8 border border-gray-700">
-                        <h2 className="text-3xl font-bold text-center text-purple-400 mb-8 tracking-wide">Phần 2: Ôn Tập Tổng Hợp</h2>
+                    <div className="bg-gray-800 rounded-3xl shadow-2xl p-8 border border-gray-700 animate-fadeIn w-full">
+                        <h2 className="text-3xl font-bold text-center text-purple-400 mb-8 tracking-wide">Danh Sách Bài Ôn Tập Tổng Hợp</h2>
                         <p className="text-center text-gray-400 mb-8 text-lg">Bé chọn 1 bài để làm chi tiết nhé!</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {REVIEWS.map((p) => (
@@ -396,20 +407,20 @@
             const currentStepDef = activeProb.steps[stepIdx];
 
             return (
-                <div className="bg-gray-800 rounded-3xl shadow-2xl p-8 border border-gray-700 animate-fadeIn">
-                    <button onClick={() => setActiveId(null)} className="text-gray-400 hover:text-white mb-6 flex items-center transition-colors">
+                <div className="bg-gray-800 rounded-3xl shadow-2xl p-8 border border-gray-700 animate-fadeIn w-full">
+                    <button onClick={() => setActiveId(null)} className="text-gray-400 hover:text-white mb-6 flex items-center transition-colors bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg">
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                        Quay lại danh sách bài
+                        Quay lại danh sách
                     </button>
 
                     <h2 className="text-3xl font-bold text-center text-purple-400 mb-6">{activeProb.title}</h2>
                     
-                    <div className="text-xl text-yellow-400 font-semibold mb-8 bg-yellow-900/20 px-6 py-3 rounded-xl border border-yellow-700/50 text-center max-w-2xl mx-auto">
+                    <div className="text-xl text-yellow-400 font-semibold mb-8 bg-yellow-900/20 px-6 py-3 rounded-xl border border-yellow-700/50 text-center max-w-2xl mx-auto shadow-sm">
                         💡 Chú ý: {activeProb.rule}
                     </div>
 
                     <div className="mb-10 flex justify-center">
-                        <div className="bg-gray-900 rounded-xl py-4 px-10 border border-gray-600 inline-flex items-center">
+                        <div className="bg-gray-900 rounded-xl py-4 px-10 border border-gray-600 inline-flex items-center shadow-inner">
                              <span className="text-gray-400 font-semibold mr-6 text-xl">Đề bài:</span>
                              {activeProb.titleExpr}
                         </div>
@@ -427,8 +438,8 @@
                         </div>
                     ) : (
                         <div className="flex flex-col items-center animate-bounce mt-10">
-                            <div className="text-green-400 text-3xl font-bold mb-6 flex items-center bg-green-900/30 px-10 py-4 rounded-2xl border border-green-800">
-                                🎉 Chúc mừng bé đã hoàn thành bài toán phức tạp này!
+                            <div className="text-green-400 text-3xl font-bold mb-6 flex items-center bg-green-900/30 px-10 py-4 rounded-2xl border border-green-800 shadow-lg">
+                                🎉 Chúc mừng bé đã hoàn thành xuất sắc bài này!
                             </div>
                             <button onClick={() => setActiveId(null)} className="bg-purple-600 hover:bg-purple-500 text-white text-xl font-bold py-4 px-12 rounded-full transition-colors shadow-lg">
                                 Chọn bài tập khác
@@ -440,13 +451,12 @@
         };
 
         // ==========================================
-        // 5. COMPONENT CHÍNH ROOT CỦA APP
+        // 5. MODULE LUYỆN TẬP NGẪU NHIÊN
         // ==========================================
-        const App = () => {
+        const PracticeSection = () => {
             const [operation, setOperation] = useState('+');
             const [f1, setF1] = useState({ n: 1, d: 2 });
             const [f2, setF2] = useState({ n: 1, d: 4 });
-            const [status, setStatus] = useState('idle');
 
             const generateProblem = (op = operation) => {
                 let n1 = Math.floor(Math.random() * 9) + 1;
@@ -463,7 +473,6 @@
 
                 setF1({ n: n1, d: d1 });
                 setF2({ n: n2, d: d2 });
-                setStatus('idle');
             };
 
             useEffect(() => { generateProblem(); }, [operation]);
@@ -477,44 +486,61 @@
             ];
 
             return (
-                <div className="w-full flex flex-col gap-6">
-                    {/* Phần 1: Luyện toán cơ bản */}
-                    <div className="bg-gray-800 rounded-3xl shadow-2xl p-8 border border-gray-700">
-                        <h1 className="text-3xl font-bold text-center text-blue-400 mb-8 tracking-wide">Phần 1: Luyện Giải Toán Ngẫu Nhiên</h1>
-                        
-                        <div className="flex flex-wrap justify-center gap-4 mb-10">
-                            {OP_CONFIGS.map(opCfg => (
-                                <button key={opCfg.id} onClick={() => setOperation(opCfg.id)}
-                                    className={`px-6 py-3 rounded-xl text-xl font-bold transition-all ${operation === opCfg.id ? 'bg-blue-600 text-white ring-4 ring-blue-900 shadow-lg' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}>
-                                    Phép {opCfg.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        <DetailedCalculator 
-                            key={`${operation}-${f1.n}-${f1.d}-${f2.n}-${f2.d}`}
-                            f1={f1} 
-                            f2={f2} 
-                            operation={operation} 
-                        />
-
-                        <div className="flex justify-center mt-6">
-                            <button onClick={() => generateProblem()} className="bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white text-lg font-bold py-3 px-8 rounded-full transition-colors flex items-center">
-                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                Đổi bài ngẫu nhiên khác
+                <div className="bg-gray-800 rounded-3xl shadow-2xl p-8 border border-gray-700 animate-fadeIn w-full">
+                    <h1 className="text-3xl font-bold text-center text-blue-400 mb-8 tracking-wide">Luyện Giải Toán Ngẫu Nhiên</h1>
+                    
+                    <div className="flex flex-wrap justify-center gap-4 mb-10 bg-gray-900 p-4 rounded-2xl shadow-inner border border-gray-800">
+                        {OP_CONFIGS.map(opCfg => (
+                            <button key={opCfg.id} onClick={() => setOperation(opCfg.id)}
+                                className={`px-6 py-3 rounded-xl text-xl font-bold transition-all ${operation === opCfg.id ? 'bg-blue-600 text-white ring-2 ring-blue-400 shadow-lg transform scale-105' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}>
+                                Phép {opCfg.label}
                             </button>
-                        </div>
+                        ))}
                     </div>
 
-                    {/* Vạch ngăn cách */}
-                    <div className="flex items-center justify-center my-6">
-                        <div className="h-px bg-gray-700 w-1/3"></div>
-                        <span className="mx-4 text-gray-500 font-bold tracking-widest uppercase">Phần Nâng Cao</span>
-                        <div className="h-px bg-gray-700 w-1/3"></div>
+                    <DetailedCalculator 
+                        key={`${operation}-${f1.n}-${f1.d}-${f2.n}-${f2.d}`}
+                        f1={f1} 
+                        f2={f2} 
+                        operation={operation} 
+                    />
+
+                    <div className="flex justify-center mt-10 border-t border-gray-700 pt-8">
+                        <button onClick={() => generateProblem()} className="bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white text-lg font-bold py-4 px-10 rounded-full transition-colors flex items-center shadow-lg">
+                            <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            Đổi bài ngẫu nhiên khác
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 6. COMPONENT CHÍNH ROOT CỦA APP (NAVIGATOR)
+        // ==========================================
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('practice'); // 'practice' | 'review'
+
+            return (
+                <div className="w-full flex flex-col items-center gap-8">
+                    {/* Header Tabs Navigation */}
+                    <div className="flex space-x-4 bg-gray-800 p-2 rounded-2xl shadow-lg border border-gray-700 z-10 sticky top-4">
+                        <button 
+                            onClick={() => setActiveTab('practice')} 
+                            className={`px-8 py-4 rounded-xl text-xl font-bold transition-all ${activeTab === 'practice' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}>
+                            Phần 1: Luyện Tập (Ngẫu nhiên)
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('review')} 
+                            className={`px-8 py-4 rounded-xl text-xl font-bold transition-all ${activeTab === 'review' ? 'bg-purple-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}>
+                            Phần 2: Ôn Tập Tổng Hợp
+                        </button>
                     </div>
 
-                    {/* Phần 2: Ôn tập tổng hợp */}
-                    <ReviewSection />
+                    {/* Main Content Area */}
+                    <div className="w-full transition-all duration-300">
+                        {activeTab === 'practice' ? <PracticeSection /> : <ReviewSection />}
+                    </div>
                 </div>
             );
         };
